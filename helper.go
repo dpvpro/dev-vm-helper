@@ -63,7 +63,7 @@ func main() {
 
 	pflag.Parse()
 
-	virtinit()
+	LibvirtInit()
 	defer libvirtInstance.Close()
 
 	switch {
@@ -264,6 +264,14 @@ func VirtualMachinesIps() {
 	}
 }
 
+func LibvirtInit() {
+	var err error
+	libvirtInstance, err = libvirt.NewConnect("qemu:///system")
+	if err != nil {
+		log.Fatalf("failed to connect: %v", err)
+	}
+}
+
 func herr(e error) {
 	if e != nil {
 		fmt.Printf(`{"error":"%v"}`, strings.ReplaceAll(e.Error(), "\"", ""))
@@ -281,12 +289,4 @@ func hret(i interface{}) {
 	herr(err)
 	fmt.Print(string(ret))
 	os.Exit(0)
-}
-
-func virtinit() {
-	var err error
-	libvirtInstance, err = libvirt.NewConnect("qemu:///system")
-	if err != nil {
-		log.Fatalf("failed to connect: %v", err)
-	}
 }
