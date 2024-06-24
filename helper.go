@@ -241,11 +241,10 @@ func VirtualMachinesIps() {
 	for _, domain := range AllDomains {
 		DomainName, err := domain.GetName()
 		herr(err)
-		// fmt.Printf("Domain - %s\n", domainName)
 
 		AllDomainInterfaces, err := domain.ListAllInterfaceAddresses(libvirt.DOMAIN_INTERFACE_ADDRESSES_SRC_LEASE)
 		herr(err)
-		// fmt.Printf("Domain interfaces - %v, Type - %T\n", allDomainInterfaces, allDomainInterfaces)
+		// fmt.Printf("Domain interfaces - %v, Type - %T\n", AllDomainInterfaces, AllDomainInterfaces)
 
 		for _, DomainInterfaceEntry := range AllDomainInterfaces {
 
@@ -253,11 +252,11 @@ func VirtualMachinesIps() {
 			for _, val := range DomainInterfaceEntry.Addrs {
 				AllAddrs += val.Addr + " "
 			}
-			fmt.Printf("%s, interface - %v, ip address - %v\n",
+			fmt.Printf("%s, interface - %v, address - %v\n",
 				DomainName, DomainInterfaceEntry.Name, AllAddrs)
 
 			// fmt.Printf("Domain - %s, interface - %v, ip address - %v\n",
-			//   domainName, domainInterfaceEntry.Name, domainInterfaceEntry.Addrs[0].Addr)
+			//   DomainName, DomainInterfaceEntry.Name, DomainInterfaceEntry.Addrs[0].Addr)
 		}
 
 		domain.Free()
