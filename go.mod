@@ -1,6 +1,7 @@
 module spacevm-dev-helper
 
-go 1.22.4
+// debian 11 compatibility
+go 1.15
 
 require (
 	github.com/spf13/pflag v1.0.5

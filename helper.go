@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"io/ioutil"
 	"strings"
 
 	"github.com/spf13/pflag"
@@ -49,6 +50,7 @@ var virtualMachineResume = pflag.Bool("resume", false, "called after Pause, to r
 var virtualMachineCreate = pflag.Bool("create", false, "creates a new machine. Requires --xml-template parameter. Returns result with a current machine state")
 var virtualMachineDelete = pflag.Bool("delete", false, "deletes an existing machine.")
 var virtualMachinesIps = pflag.Bool("ips", false, "show ip addresses vm on host.")
+var virtualMachinesStateAll = pflag.Bool("show-all", false, "show ip addresses vm on host.")
 
 var vm = pflag.String("vm", "", "vm of the machine to work with")
 var xmlTemplate = pflag.String("xml-template", "", "path to an xml template file that describes a machine. See qemu docs on xml templates.")
@@ -89,52 +91,21 @@ func main() {
 		VirtualMachineDelete(*vm)
 	case *virtualMachinesIps:
 		VirtualMachinesIps()
+	case *virtualMachinesStateAll:
+		VirtualMachinesStateAll()
 	}
-
 }
 
 // VirtualMachineState returns current state of a virtual machine.
 func VirtualMachineState(vm string) {
-	var ret VirtualMachineStateInfo
-
-	d, err := libvirtInstance.LookupDomainByName(vm)
-	herr(err)
-
-	domainInfo, err := d.GetInfo()
-	herr(err)
-
-	ret.CpuCount = domainInfo.NrVirtCpu
-	ret.CpuTime = domainInfo.CpuTime
-	// god only knows why they return memory in kilobytes.
-	ret.MemoryBytes = domainInfo.Memory * 1024
-	ret.MaxMemoryBytes = domainInfo.MaxMem * 1024
-
-	switch domainInfo.State {
-	case libvirt.DOMAIN_NOSTATE:
-		ret.State = VirtStatePending
-	case libvirt.DOMAIN_RUNNING:
-		ret.State = VirtStateRunning
-	case libvirt.DOMAIN_BLOCKED:
-		ret.State = VirtStateBlocked
-	case libvirt.DOMAIN_PAUSED:
-		ret.State = VirtStatePaused
-	case libvirt.DOMAIN_SHUTDOWN:
-		ret.State = VirtStateShutdown
-	case libvirt.DOMAIN_SHUTOFF:
-		ret.State = VirtStateShutoff
-	case libvirt.DOMAIN_CRASHED:
-		ret.State = VirtStateCrashed
-	case libvirt.DOMAIN_PMSUSPENDED:
-		ret.State = VirtStateHybernating
-	}
-
+	ret := GetVirtualMachineStateInfo(vm)
 	hret(ret)
 }
 
 // VirtualMachineCreate creates a new VM from an xml template file
 func VirtualMachineCreate(xmlTemplate string) {
 
-	xml, err := os.ReadFile(xmlTemplate)
+	xml, err := ioutil.ReadFile(xmlTemplate)
 	herr(err)
 
 	d, err := libvirtInstance.DomainDefineXML(string(xml))
@@ -237,7 +208,9 @@ func VirtualMachinesIps() {
 	AllDomains, err := libvirtInstance.ListAllDomains(libvirt.CONNECT_LIST_DOMAINS_ACTIVE)
 	herr(err)
 
-	fmt.Printf("%d running domains:\n", len(AllDomains))
+	outputString := fmt.Sprintf("%d running domains:", len(AllDomains))
+	fmt.Println(outputString)
+
 	for _, domain := range AllDomains {
 		DomainName, err := domain.GetName()
 		herr(err)
@@ -245,22 +218,75 @@ func VirtualMachinesIps() {
 		AllDomainInterfaces, err := domain.ListAllInterfaceAddresses(libvirt.DOMAIN_INTERFACE_ADDRESSES_SRC_LEASE)
 		herr(err)
 		// fmt.Printf("Domain interfaces - %v, Type - %T\n", AllDomainInterfaces, AllDomainInterfaces)
-
 		for _, DomainInterfaceEntry := range AllDomainInterfaces {
-
 			var AllAddrs string
 			for _, val := range DomainInterfaceEntry.Addrs {
 				AllAddrs += val.Addr + " "
 			}
-			fmt.Printf("%s, interface - %v, address - %v\n",
-				DomainName, DomainInterfaceEntry.Name, AllAddrs)
-
+			outputString := fmt.Sprintf("%s, interface - %v, address - %v", DomainName, DomainInterfaceEntry.Name, AllAddrs)
+			fmt.Println(outputString)
 			// fmt.Printf("Domain - %s, interface - %v, ip address - %v\n",
 			//   DomainName, DomainInterfaceEntry.Name, DomainInterfaceEntry.Addrs[0].Addr)
 		}
-
 		domain.Free()
 	}
+}
+
+func VirtualMachinesStateAll() {
+	AllDomains, err := libvirtInstance.ListAllDomains(libvirt.CONNECT_LIST_DOMAINS_ACTIVE | libvirt.CONNECT_LIST_DOMAINS_INACTIVE)
+	herr(err)
+
+	OutputString := fmt.Sprintf("There are %d domains:", len(AllDomains))
+	fmt.Println(OutputString)
+
+	for _, domain := range AllDomains {
+		DomainName, err := domain.GetName()
+		herr(err)
+
+		VmState := GetVirtualMachineStateInfo(DomainName)
+		fmt.Printf("Domain name - %v, %v\n", DomainName, VmState.State)
+
+	}
+
+}
+
+func GetVirtualMachineStateInfo(DomainName string) (DomainStateInfo VirtualMachineStateInfo) {
+
+	var ret VirtualMachineStateInfo
+
+	d, err := libvirtInstance.LookupDomainByName(DomainName)
+	herr(err)
+
+	DomainInfo, err := d.GetInfo()
+	herr(err)
+
+	ret.CpuCount = DomainInfo.NrVirtCpu
+	ret.CpuTime = DomainInfo.CpuTime
+	// god only knows why they return memory in kilobytes.
+	ret.MemoryBytes = DomainInfo.Memory * 1024
+	ret.MaxMemoryBytes = DomainInfo.MaxMem * 1024
+
+	switch DomainInfo.State {
+	case libvirt.DOMAIN_NOSTATE:
+		ret.State = VirtStatePending
+	case libvirt.DOMAIN_RUNNING:
+		ret.State = VirtStateRunning
+	case libvirt.DOMAIN_BLOCKED:
+		ret.State = VirtStateBlocked
+	case libvirt.DOMAIN_PAUSED:
+		ret.State = VirtStatePaused
+	case libvirt.DOMAIN_SHUTDOWN:
+		ret.State = VirtStateShutdown
+	case libvirt.DOMAIN_SHUTOFF:
+		ret.State = VirtStateShutoff
+	case libvirt.DOMAIN_CRASHED:
+		ret.State = VirtStateCrashed
+	case libvirt.DOMAIN_PMSUSPENDED:
+		ret.State = VirtStateHybernating
+	}
+
+	return ret
+
 }
 
 func LibvirtInit() {
