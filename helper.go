@@ -3,9 +3,9 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
-	"io/ioutil"
 	"strings"
 
 	"github.com/spf13/pflag"
@@ -15,14 +15,14 @@ import (
 type VirtualMachineStatus string
 
 const (
-	VirtStatePending     = VirtualMachineStatus("Pending")     // VM was just created and there is no state yet
-	VirtStateRunning     = VirtualMachineStatus("Running")     // VM is running
-	VirtStateBlocked     = VirtualMachineStatus("Blocked")     // VM Blocked on resource
-	VirtStatePaused      = VirtualMachineStatus("Paused")      // VM is paused
-	VirtStateShutdown    = VirtualMachineStatus("Shutdown")    // VM is being shut down
-	VirtStateShutoff     = VirtualMachineStatus("Shutoff")     // VM is shut off
-	VirtStateCrashed     = VirtualMachineStatus("Crashed")     // Most likely VM crashed on startup cause something is missing.
-	VirtStateHybernating = VirtualMachineStatus("Hybernating") // VM is hybernating usually due to guest machine request
+	VirtStatePending     = VirtualMachineStatus("pending")     // VM was just created and there is no state yet
+	VirtStateRunning     = VirtualMachineStatus("running")     // VM is running
+	VirtStateBlocked     = VirtualMachineStatus("blocked")     // VM Blocked on resource
+	VirtStatePaused      = VirtualMachineStatus("paused")      // VM is paused
+	VirtStateShutdown    = VirtualMachineStatus("shutdown")    // VM is being shut down
+	VirtStateShutoff     = VirtualMachineStatus("shutoff")     // VM is shut off
+	VirtStateCrashed     = VirtualMachineStatus("crashed")     // Most likely VM crashed on startup cause something is missing.
+	VirtStateHybernating = VirtualMachineStatus("hybernating") // VM is hybernating usually due to guest machine request
 )
 
 type VirtualMachineStateInfo struct {
@@ -208,7 +208,7 @@ func VirtualMachinesIps() {
 	AllDomains, err := libvirtInstance.ListAllDomains(libvirt.CONNECT_LIST_DOMAINS_ACTIVE)
 	herr(err)
 
-	outputString := fmt.Sprintf("%d running domains:", len(AllDomains))
+	outputString := fmt.Sprintf("There are %d active domains:", len(AllDomains))
 	fmt.Println(outputString)
 
 	for _, domain := range AllDomains {
@@ -233,28 +233,34 @@ func VirtualMachinesIps() {
 }
 
 func VirtualMachinesStateAll() {
-	AllDomains, err := libvirtInstance.ListAllDomains(libvirt.CONNECT_LIST_DOMAINS_ACTIVE | libvirt.CONNECT_LIST_DOMAINS_INACTIVE)
+	AllDomainsActive, err := libvirtInstance.ListAllDomains(libvirt.CONNECT_LIST_DOMAINS_ACTIVE)
+	herr(err)
+	AllDomainsInactiv, err := libvirtInstance.ListAllDomains(libvirt.CONNECT_LIST_DOMAINS_INACTIVE)
 	herr(err)
 
-	OutputString := fmt.Sprintf("There are %d domains:", len(AllDomains))
+	OutputString := fmt.Sprintf("There are %d domains: %d active and %d inactive",
+		len(AllDomainsActive)+len(AllDomainsInactiv), len(AllDomainsActive), len(AllDomainsInactiv))
 	fmt.Println(OutputString)
+	PrintDomainStatus(AllDomainsActive)
+	PrintDomainStatus(AllDomainsInactiv)
 
-	for _, domain := range AllDomains {
+}
+
+func PrintDomainStatus(domains []libvirt.Domain) {
+	for _, domain := range domains {
 		DomainName, err := domain.GetName()
 		herr(err)
-
 		VmState := GetVirtualMachineStateInfo(DomainName)
-		fmt.Printf("Domain name - %v, %v\n", DomainName, VmState.State)
-
+		fmt.Printf("%v, %v\n", DomainName, VmState.State)
 	}
 
 }
 
-func GetVirtualMachineStateInfo(DomainName string) (DomainStateInfo VirtualMachineStateInfo) {
+func GetVirtualMachineStateInfo(vm string) (DomainStateInfo VirtualMachineStateInfo) {
 
 	var ret VirtualMachineStateInfo
 
-	d, err := libvirtInstance.LookupDomainByName(DomainName)
+	d, err := libvirtInstance.LookupDomainByName(vm)
 	herr(err)
 
 	DomainInfo, err := d.GetInfo()
