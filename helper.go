@@ -208,8 +208,8 @@ func VirtualMachinesIps() {
 	AllDomains, err := libvirtInstance.ListAllDomains(libvirt.CONNECT_LIST_DOMAINS_ACTIVE)
 	herr(err)
 
-	outputString := fmt.Sprintf("There are %d active domains:", len(AllDomains))
-	fmt.Println(outputString)
+	OutputString := fmt.Sprintf("There are %d active domains:", len(AllDomains))
+	fmt.Println(OutputString)
 
 	for _, domain := range AllDomains {
 		DomainName, err := domain.GetName()
@@ -223,8 +223,8 @@ func VirtualMachinesIps() {
 			for _, val := range DomainInterfaceEntry.Addrs {
 				AllAddrs += val.Addr + " "
 			}
-			outputString := fmt.Sprintf("%s, interface - %v, address - %v", DomainName, DomainInterfaceEntry.Name, AllAddrs)
-			fmt.Println(outputString)
+			OutputString := fmt.Sprintf("%s, interface - %v, address - %v", DomainName, DomainInterfaceEntry.Name, AllAddrs)
+			fmt.Println(OutputString)
 			// fmt.Printf("Domain - %s, interface - %v, ip address - %v\n",
 			//   DomainName, DomainInterfaceEntry.Name, DomainInterfaceEntry.Addrs[0].Addr)
 		}
@@ -241,12 +241,12 @@ func VirtualMachinesStateAll() {
 	OutputString := fmt.Sprintf("There are %d domains: %d active and %d inactive",
 		len(AllDomainsActive)+len(AllDomainsInactiv), len(AllDomainsActive), len(AllDomainsInactiv))
 	fmt.Println(OutputString)
-	PrintDomainStatus(AllDomainsActive)
-	PrintDomainStatus(AllDomainsInactiv)
+	PrintVirtualMachinesStatus(AllDomainsActive)
+	PrintVirtualMachinesStatus(AllDomainsInactiv)
 
 }
 
-func PrintDomainStatus(domains []libvirt.Domain) {
+func PrintVirtualMachinesStatus(domains []libvirt.Domain) {
 	for _, domain := range domains {
 		DomainName, err := domain.GetName()
 		herr(err)
