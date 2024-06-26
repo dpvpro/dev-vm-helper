@@ -253,46 +253,44 @@ func PrintVirtualMachinesStatus(domains []libvirt.Domain) {
 		VmState := GetVirtualMachineStateInfo(DomainName)
 		fmt.Printf("%v, %v\n", DomainName, VmState.State)
 	}
-
 }
 
-func GetVirtualMachineStateInfo(vm string) (DomainStateInfo VirtualMachineStateInfo) {
+func GetVirtualMachineStateInfo(vm string) (info VirtualMachineStateInfo) {
 
-	var ret VirtualMachineStateInfo
+	var VmStateInfo VirtualMachineStateInfo
 
 	d, err := libvirtInstance.LookupDomainByName(vm)
 	herr(err)
 
-	DomainInfo, err := d.GetInfo()
+	dominfo, err := d.GetInfo()
 	herr(err)
 
-	ret.CpuCount = DomainInfo.NrVirtCpu
-	ret.CpuTime = DomainInfo.CpuTime
+	VmStateInfo.CpuCount = dominfo.NrVirtCpu
+	VmStateInfo.CpuTime = dominfo.CpuTime
 	// god only knows why they return memory in kilobytes.
-	ret.MemoryBytes = DomainInfo.Memory * 1024
-	ret.MaxMemoryBytes = DomainInfo.MaxMem * 1024
+	VmStateInfo.MemoryBytes = dominfo.Memory * 1024
+	VmStateInfo.MaxMemoryBytes = dominfo.MaxMem * 1024
 
-	switch DomainInfo.State {
+	switch dominfo.State {
 	case libvirt.DOMAIN_NOSTATE:
-		ret.State = VirtStatePending
+		VmStateInfo.State = VirtStatePending
 	case libvirt.DOMAIN_RUNNING:
-		ret.State = VirtStateRunning
+		VmStateInfo.State = VirtStateRunning
 	case libvirt.DOMAIN_BLOCKED:
-		ret.State = VirtStateBlocked
+		VmStateInfo.State = VirtStateBlocked
 	case libvirt.DOMAIN_PAUSED:
-		ret.State = VirtStatePaused
+		VmStateInfo.State = VirtStatePaused
 	case libvirt.DOMAIN_SHUTDOWN:
-		ret.State = VirtStateShutdown
+		VmStateInfo.State = VirtStateShutdown
 	case libvirt.DOMAIN_SHUTOFF:
-		ret.State = VirtStateShutoff
+		VmStateInfo.State = VirtStateShutoff
 	case libvirt.DOMAIN_CRASHED:
-		ret.State = VirtStateCrashed
+		VmStateInfo.State = VirtStateCrashed
 	case libvirt.DOMAIN_PMSUSPENDED:
-		ret.State = VirtStateHybernating
+		VmStateInfo.State = VirtStateHybernating
 	}
 
-	return ret
-
+	return VmStateInfo
 }
 
 func LibvirtInit() {
