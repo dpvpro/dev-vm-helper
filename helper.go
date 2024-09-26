@@ -38,21 +38,21 @@ type VirtualMachineStateInfo struct {
 // var tarsvirtVersion = *pflag.Bool("tarsvirt-version", false, "Returns result with version of tarsvirt populated")
 
 // VirtualMachine commands
-var virtualMachineState 		= pflag.Bool("state", false, "Returns result with a current machine state")
-var virtualMachineSoftReboot	= pflag.Bool("soft-reboot", false, "reboots a machine gracefully, as chosen by hypervisor. Returns result with a current machine state")
-var virtualMachineHardReboot 	= pflag.Bool("hard-reboot", false, "sends a VM into hard-reset mode. This is damaging to all ongoing file operations. Returns result with a current machine state")
-var virtualMachineShutdown 		= pflag.Bool("shutdown", false, "gracefully shuts down the VM. Returns result with a current machine state")
-var virtualMachineShutoff 		= pflag.Bool("shutoff", false, "kills running VM. Equivalent to pulling a plug out of a computer. Returns result with a current machine state")
-var virtualMachineStart 		= pflag.Bool("start", false, "starts up a VM. Returns result with a current machine state")
-var virtualMachinePause 		= pflag.Bool("pause", false, "stops the execution of the VM. CPU is not used, but memory is still occupied. Returns result with a current machine state")
-var virtualMachineResume 		= pflag.Bool("resume", false, "called after Pause, to resume the invocation of the VM. Returns result with a current machine state")
-var virtualMachineCreate 		= pflag.Bool("create", false, "creates a new machine. Requires --xml-template parameter. Returns result with a current machine state")
-var virtualMachineDelete 		= pflag.Bool("delete", false, "deletes an existing machine.")
-var virtualMachinesIps 			= pflag.Bool("ips", false, "show ip addresses vm on host.")
-var virtualMachinesStateAll 	= pflag.Bool("show-all", false, "show ip addresses vm on host.")
+var virtualMachineState = pflag.Bool("state", false, "Returns result with a current machine state")
+var virtualMachineSoftReboot = pflag.Bool("soft-reboot", false, "reboots a machine gracefully, as chosen by hypervisor. Returns result with a current machine state")
+var virtualMachineHardReboot = pflag.Bool("hard-reboot", false, "sends a VM into hard-reset mode. This is damaging to all ongoing file operations. Returns result with a current machine state")
+var virtualMachineShutdown = pflag.Bool("shutdown", false, "gracefully shuts down the VM. Returns result with a current machine state")
+var virtualMachineShutoff = pflag.Bool("shutoff", false, "kills running VM. Equivalent to pulling a plug out of a computer. Returns result with a current machine state")
+var virtualMachineStart = pflag.Bool("start", false, "starts up a VM. Returns result with a current machine state")
+var virtualMachinePause = pflag.Bool("pause", false, "stops the execution of the VM. CPU is not used, but memory is still occupied. Returns result with a current machine state")
+var virtualMachineResume = pflag.Bool("resume", false, "called after Pause, to resume the invocation of the VM. Returns result with a current machine state")
+var virtualMachineCreate = pflag.Bool("create", false, "creates a new machine. Requires --xml-template parameter. Returns result with a current machine state")
+var virtualMachineDelete = pflag.Bool("delete", false, "deletes an existing machine.")
+var virtualMachinesIps = pflag.Bool("ips", false, "show ip addresses vm on host.")
+var virtualMachinesStateAll = pflag.Bool("show-all", false, "show status all vms on host.")
 
-var vm 							= pflag.String("vm", "", "vm of the machine to work with")
-var xmlTemplate 				= pflag.String("xml-template", "", "path to an xml template file that describes a machine. See qemu docs on xml templates.")
+var vm = pflag.String("vm", "", "vm of the machine to work with")
+var xmlTemplate = pflag.String("xml-template", "", "path to an xml template file that describes a machine. See qemu docs on xml templates.")
 
 var libvirtInstance *libvirt.Connect
 
@@ -206,23 +206,26 @@ func VirtualMachinesIps() {
 
 	AllDomains, err := libvirtInstance.ListAllDomains(libvirt.CONNECT_LIST_DOMAINS_ACTIVE)
 	herr(err)
-
+	fmt.Println(AllDomains)
 	OutputString := fmt.Sprintf("There are %d active domains:", len(AllDomains))
 	fmt.Println(OutputString)
 
 	for _, domain := range AllDomains {
 		DomainName, err := domain.GetName()
 		herr(err)
+		// if DomainName != "debian-work" {
+		// 	continue
+		// }
 
-		AllDomainInterfaces, err := domain.ListAllInterfaceAddresses(libvirt.DOMAIN_INTERFACE_ADDRESSES_SRC_LEASE)
+		AllDomainInterfaces, err := domain.ListAllInterfaceAddresses(libvirt.DOMAIN_INTERFACE_ADDRESSES_SRC_AGENT)
 		herr(err)
-		// fmt.Printf("Domain interfaces - %v, Type - %T\n", AllDomainInterfaces, AllDomainInterfaces)
+		fmt.Printf("All interfaces for domain %s - %v, Type - %T\n", DomainName, AllDomainInterfaces, AllDomainInterfaces)
 		for _, DomainInterfaceEntry := range AllDomainInterfaces {
 			var AllAddrs string
 			for _, val := range DomainInterfaceEntry.Addrs {
 				AllAddrs += val.Addr + " "
 			}
-			OutputString := fmt.Sprintf("%s, interface - %v, address - %v", DomainName, DomainInterfaceEntry.Name, AllAddrs)
+			OutputString := fmt.Sprintf("Domain - %s, interface - %v, address - %v", DomainName, DomainInterfaceEntry.Name, AllAddrs)
 			fmt.Println(OutputString)
 			// fmt.Printf("Domain - %s, interface - %v, ip address - %v\n",
 			//   DomainName, DomainInterfaceEntry.Name, DomainInterfaceEntry.Addrs[0].Addr)
@@ -303,7 +306,7 @@ func LibvirtInit() {
 func herr(e error) {
 	if e != nil {
 		fmt.Printf(`{"error":"%v"}`, strings.ReplaceAll(e.Error(), "\"", ""))
-		os.Exit(1)
+		// os.Exit(1)
 	}
 }
 
