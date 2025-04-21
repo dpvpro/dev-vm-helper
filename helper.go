@@ -212,6 +212,7 @@ func VirtualMachinesIps() {
 
 	for _, domain := range AllDomains {
 		DomainName, err := domain.GetName()
+		fmt.Printf("Domain - %s:\n", DomainName)
 		herr(err)
 		// if DomainName != "debian-work" {
 		// 	continue
@@ -219,13 +220,13 @@ func VirtualMachinesIps() {
 
 		AllDomainInterfaces, err := domain.ListAllInterfaceAddresses(libvirt.DOMAIN_INTERFACE_ADDRESSES_SRC_AGENT)
 		herr(err)
-		fmt.Printf("All interfaces for domain %s - %v, Type - %T\n", DomainName, AllDomainInterfaces, AllDomainInterfaces)
+		// fmt.Printf("All interfaces for domain %s - %v, Type - %T\n", DomainName, AllDomainInterfaces, AllDomainInterfaces)
 		for _, DomainInterfaceEntry := range AllDomainInterfaces {
 			var AllAddrs string
 			for _, val := range DomainInterfaceEntry.Addrs {
 				AllAddrs += val.Addr + " "
 			}
-			OutputString := fmt.Sprintf("Domain - %s, interface - %v, address - %v", DomainName, DomainInterfaceEntry.Name, AllAddrs)
+			OutputString := fmt.Sprintf("interface - %v, address - %v", DomainInterfaceEntry.Name, AllAddrs)
 			fmt.Println(OutputString)
 			// fmt.Printf("Domain - %s, interface - %v, ip address - %v\n",
 			//   DomainName, DomainInterfaceEntry.Name, DomainInterfaceEntry.Addrs[0].Addr)
@@ -253,7 +254,7 @@ func PrintVirtualMachinesStatus(domains []libvirt.Domain) {
 		DomainName, err := domain.GetName()
 		herr(err)
 		VmState := GetVirtualMachineStateInfo(DomainName)
-		fmt.Printf("%v, %v\n", DomainName, VmState.State)
+		fmt.Printf("%v\n, %v\n", DomainName, VmState.State)
 	}
 }
 
@@ -305,7 +306,7 @@ func LibvirtInit() {
 
 func herr(e error) {
 	if e != nil {
-		fmt.Printf(`{"error":"%v"}`, strings.ReplaceAll(e.Error(), "\"", ""))
+		fmt.Printf("%v\n", strings.ReplaceAll(e.Error(), "\"", ""))
 		// os.Exit(1)
 	}
 }
@@ -315,7 +316,7 @@ func hok(message string) {
 	os.Exit(0)
 }
 
-func hret(i interface{}) {
+func hret(i any) {
 	ret, err := json.Marshal(i)
 	herr(err)
 	fmt.Print(string(ret))
